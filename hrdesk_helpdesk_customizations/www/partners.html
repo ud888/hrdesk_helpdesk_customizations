@@ -1,0 +1,51 @@
+{% extends "templates/web.html" %}
+
+{% block title %}HR Desk Partner Portal{% endblock %}
+
+{% block page_content %}
+<main class="hrd-partner-portal" data-request-manager="{{ 1 if request_manager else 0 }}">
+  <header class="hrd-partner-header">
+    <div><p class="hrd-eyebrow">HR Desk</p><h1>Partner Portal</h1><p>{{ partner_name }} · {{ partner_user }}</p></div>
+    <nav aria-label="Navigasi Partner Portal">
+      <a href="#knowledge">Knowledge Base Partner</a>
+      <a href="#requests">Permintaan Saya</a>
+      <a href="#submit">Ajukan SOC</a>
+      {% if l1_support_access %}<a href="https://support.hrdesk.id/helpdesk/tickets">Workspace L1 Support</a>{% endif %}
+      <a href="/api/method/logout">Keluar</a>
+    </nav>
+  </header>
+
+  <section class="hrd-partner-hero">
+    <div><h2>Panduan dan permintaan operasional partner</h2><p>Gunakan portal ini untuk membaca panduan partner dan mengajukan permintaan SOC.</p></div>
+    <a class="hrd-primary" href="#submit">Ajukan SOC</a>
+  </section>
+
+  <aside class="hrd-notice"><strong>Insiden pelanggan tetap ditangani melalui Customer Support Workspace.</strong> Jangan mengirim ulang insiden pelanggan sebagai permintaan SOC.</aside>
+
+  <section id="knowledge" class="hrd-section">
+    <div class="hrd-section-heading"><h2>Knowledge Base Partner</h2><input id="hrd-kb-search" type="search" placeholder="Cari panduan partner"></div>
+    <div id="hrd-kb-results" class="hrd-list" aria-live="polite"></div>
+  </section>
+
+  <section id="submit" class="hrd-section">
+    <h2>Ajukan Permintaan SOC</h2>
+    <form id="hrd-soc-form">
+      <label>Subjek<input name="subject" required maxlength="140"></label>
+      <label>Deskripsi<textarea name="description" required rows="6"></textarea></label>
+      <label>Pelanggan terkait<select name="relevant_customer"><option value="">Tidak ada / belum ditentukan</option></select></label>
+      <label>Lampiran privat<input name="attachments" type="file" multiple></label>
+      <button class="hrd-primary" type="submit">Kirim Permintaan</button>
+      <p id="hrd-form-status" role="status"></p>
+    </form>
+  </section>
+
+  <section id="requests" class="hrd-section">
+    <div class="hrd-section-heading"><h2>Permintaan Partner</h2>{% if request_manager %}<button type="button" data-scope="organization">Lihat Organisasi</button>{% endif %}</div>
+    <button type="button" data-scope="mine">Milik Saya</button>
+    <div id="hrd-requests" class="hrd-list" aria-live="polite"></div>
+    <article id="hrd-request-detail" class="hrd-detail" hidden></article>
+  </section>
+</main>
+<script src="/assets/hrdesk_helpdesk_customizations/js/partner_portal.js"></script>
+{% endblock %}
+

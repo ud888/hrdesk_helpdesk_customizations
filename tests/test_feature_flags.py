@@ -63,6 +63,11 @@ class FeatureFlagsTest(unittest.TestCase):
                 self.frappe.conf[key] = value
                 self.assertFalse(self.flags.customer_portal_ticketing_enabled())
 
+    def test_team_restrictions_require_explicit_activation(self):
+        self.assertFalse(self.flags.portal_team_restrictions_enabled())
+        self.frappe.conf[self.flags.PORTAL_TEAM_RESTRICTIONS_ENABLED] = True
+        self.assertTrue(self.flags.portal_team_restrictions_enabled())
+
     def test_agent_and_system_manager_keep_desk_access(self):
         self.agent_users.add("agent@example.com")
         self.assertTrue(self.flags.has_agent_ticket_access("agent@example.com"))

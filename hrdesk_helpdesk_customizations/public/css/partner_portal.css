@@ -1,0 +1,20 @@
+:root { --hrd-navy:#0b2854; --hrd-blue:#0c6fb8; --hrd-teal:#18a7b5; --hrd-border:#d8e2ee; --hrd-surface:#f6f9fc; }
+.hrd-partner-portal { max-width:1120px; margin:0 auto; padding:24px; color:#172033; }
+.hrd-partner-header { display:flex; justify-content:space-between; gap:24px; border-bottom:1px solid var(--hrd-border); padding-bottom:18px; }
+.hrd-partner-header h1 { color:var(--hrd-navy); margin:0; }
+.hrd-partner-header nav { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px 18px; }
+.hrd-partner-header a { color:var(--hrd-blue); text-decoration:none; }
+.hrd-eyebrow { margin:0; color:var(--hrd-teal); font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.hrd-partner-hero { display:flex; align-items:center; justify-content:space-between; gap:24px; margin:28px 0 18px; padding:38px; border-radius:18px; background:linear-gradient(135deg,#edf6ff,#e8fbfb); }
+.hrd-notice { border-left:4px solid var(--hrd-teal); padding:12px 16px; background:var(--hrd-surface); }
+.hrd-section { padding:30px 0; border-top:1px solid var(--hrd-border); }
+.hrd-section-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.hrd-primary { display:inline-block; border:0; border-radius:9px; padding:11px 18px; color:#fff!important; background:var(--hrd-blue); text-decoration:none; }
+#hrd-soc-form { display:grid; gap:14px; max-width:760px; }
+#hrd-soc-form label { display:grid; gap:6px; font-weight:600; }
+#hrd-soc-form input,#hrd-soc-form select,#hrd-soc-form textarea,#hrd-kb-search { border:1px solid #b8c7d9; border-radius:8px; padding:10px; background:#fff; }
+.hrd-list { display:grid; gap:12px; margin-top:16px; }
+.hrd-list>article,.hrd-detail { border:1px solid var(--hrd-border); border-radius:12px; padding:16px; background:#fff; }
+.hrd-detail { margin-top:18px; }
+@media(max-width:760px){.hrd-partner-header,.hrd-partner-hero,.hrd-section-heading{align-items:stretch;flex-direction:column}.hrd-partner-header nav{justify-content:flex-start}.hrd-partner-portal{padding:16px}}
+

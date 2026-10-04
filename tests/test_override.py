@@ -8,10 +8,26 @@ class KnowledgeBaseOverrideTest(unittest.TestCase):
     def setUp(self):
         self.original_modules = {
             name: sys.modules.get(name)
-            for name in ("frappe", "helpdesk", "helpdesk.api", "helpdesk.api.knowledge_base")
+            for name in (
+                "frappe",
+                "frappe.utils",
+                "hrdesk_helpdesk_customizations.knowledge_access",
+                "hrdesk_helpdesk_customizations.partner_access",
+            )
         }
 
         frappe = types.ModuleType("frappe")
+        frappe._ = lambda value: value
+
+        class Row(dict):
+            __getattr__ = dict.__getitem__
+
+        frappe.get_all = lambda *args, **kwargs: [
+            Row(name="payroll", category_name="Payroll", modified=""),
+            Row(name="appearance", category_name="Panduan Tampilan", modified=""),
+            Row(name="employee", category_name="Karyawan", modified=""),
+        ]
+        frappe.db = types.SimpleNamespace(count=lambda *args, **kwargs: 1)
 
         def whitelist(*, allow_guest=False):
             self.assertTrue(allow_guest)
@@ -19,23 +35,25 @@ class KnowledgeBaseOverrideTest(unittest.TestCase):
 
         frappe.whitelist = whitelist
 
-        helpdesk = types.ModuleType("helpdesk")
-        helpdesk.__path__ = []
-        helpdesk_api = types.ModuleType("helpdesk.api")
-        helpdesk_api.__path__ = []
-        knowledge_base = types.ModuleType("helpdesk.api.knowledge_base")
-        knowledge_base.get_categories = lambda: [
-            {"category_name": "Payroll"},
-            {"category_name": "Panduan Tampilan"},
-            {"category_name": "Karyawan"},
-        ]
+        frappe_utils = types.ModuleType("frappe.utils")
+        frappe_utils.get_user_info_for_avatar = lambda user: {"name": user}
+        frappe_utils.strip_html_tags = lambda value: value
+        knowledge_access = types.ModuleType(
+            "hrdesk_helpdesk_customizations.knowledge_access"
+        )
+        knowledge_access.require_category = lambda category: None
+        partner_access = types.ModuleType(
+            "hrdesk_helpdesk_customizations.partner_access"
+        )
+        partner_access.allowed_audiences = lambda user=None: {"Public"}
+        partner_access.can_read_article = lambda article, user=None: True
 
         sys.modules.update(
             {
                 "frappe": frappe,
-                "helpdesk": helpdesk,
-                "helpdesk.api": helpdesk_api,
-                "helpdesk.api.knowledge_base": knowledge_base,
+                "frappe.utils": frappe_utils,
+                "hrdesk_helpdesk_customizations.knowledge_access": knowledge_access,
+                "hrdesk_helpdesk_customizations.partner_access": partner_access,
             }
         )
         sys.modules.pop(

@@ -55,7 +55,12 @@ def after_request(response, request) -> None:
 
 def guard_customer_ticket_insert(doc, method=None) -> None:
     """Prevent customer-role inserts while preserving agent/email processing."""
-    del doc, method
+    del method
+    if getattr(doc, "custom_portal_request_kind", None) == "Partner SOC":
+        from hrdesk_helpdesk_customizations.partner_access import get_membership
+
+        if get_membership():
+            return
     if customer_portal_ticketing_enabled() or has_agent_ticket_access():
         return
 
