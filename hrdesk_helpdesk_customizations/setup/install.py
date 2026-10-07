@@ -162,9 +162,16 @@ def _classify_existing_categories():
 def _ensure_teams():
     for team in (COMMERCIAL_TEAM, INTERNAL_TRIAGE_TEAM, ESCALATION_TEAM):
         if not frappe.db.exists("HD Team", {"team_name": team}):
-            frappe.get_doc({"doctype": "HD Team", "team_name": team}).insert(
-                ignore_permissions=True
-            )
+            # Helpdesk requires at least one team member. Use the built-in
+            # Administrator as a neutral bootstrap member; business users are
+            # assigned explicitly during safe activation.
+            frappe.get_doc(
+                {
+                    "doctype": "HD Team",
+                    "team_name": team,
+                    "users": [{"user": "Administrator"}],
+                }
+            ).insert(ignore_permissions=True)
 
 
 def _ensure_permissions():
