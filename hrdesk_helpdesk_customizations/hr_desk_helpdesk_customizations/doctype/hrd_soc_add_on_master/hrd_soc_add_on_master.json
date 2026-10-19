@@ -1,0 +1,25 @@
+{
+ "actions": [],
+ "autoname": "field:add_on_name",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["add_on_name", "active", "description"],
+ "fields": [
+  {"fieldname": "add_on_name", "fieldtype": "Data", "in_list_view": 1, "label": "Module / Add-on", "reqd": 1, "unique": 1},
+  {"default": "1", "fieldname": "active", "fieldtype": "Check", "in_list_view": 1, "label": "Active"},
+  {"fieldname": "description", "fieldtype": "Small Text", "label": "Description"}
+ ],
+ "links": [],
+ "module": "HR Desk Helpdesk Customizations",
+ "name": "HRD SOC Add-on Master",
+ "naming_rule": "By fieldname",
+ "permissions": [
+  {"create": 1, "read": 1, "report": 1, "role": "System Manager", "write": 1},
+  {"create": 1, "read": 1, "report": 1, "role": "HR Desk Portal Administrator", "write": 1},
+  {"create": 1, "read": 1, "report": 1, "role": "HR Desk Commercial", "write": 1}
+ ],
+ "sort_field": "add_on_name",
+ "sort_order": "ASC",
+ "track_changes": 1
+}
+

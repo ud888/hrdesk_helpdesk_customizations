@@ -1,30 +1,13 @@
 from html import escape
-from urllib.parse import quote
-
 import frappe
 from frappe import _
 from frappe.utils import sanitize_html
-from frappe.utils.file_manager import get_file
 
 from hrdesk_helpdesk_customizations.partner_access import (
     get_membership,
     is_request_manager,
     require_partner,
 )
-from hrdesk_helpdesk_customizations.portal_constants import (
-    COMMERCIAL_TEAM,
-    SOC_REQUEST_KIND,
-)
-from hrdesk_helpdesk_customizations.portal_policy import can_access_soc
-
-PUBLIC_FIELDS = [
-    "name",
-    "subject",
-    "status",
-    "creation",
-    "modified",
-    "custom_relevant_customer",
-]
 
 
 def _plain_html(value):
@@ -32,17 +15,10 @@ def _plain_html(value):
     return sanitize_html("<p>" + escape(text).replace("\n", "<br>") + "</p>")
 
 
-def _data(value):
-    return frappe.parse_json(value) if isinstance(value, str) else (value or {})
-
-
 def _soc_ticket(name):
-    ticket = frappe.get_doc("HD Ticket", name)
-    if ticket.custom_portal_request_kind != SOC_REQUEST_KIND:
-        frappe.throw(_("Permintaan SOC tidak ditemukan."), frappe.DoesNotExistError)
-    if not can_access_soc(ticket, require_partner()):
-        frappe.throw(_("Anda tidak memiliki akses ke permintaan ini."), frappe.PermissionError)
-    return ticket
+    from hrdesk_helpdesk_customizations.soc_service import ticket_for_reference
+
+    return ticket_for_reference(name)
 
 
 def _pending_files(attachments):
@@ -75,36 +51,9 @@ def portal_context():
 
 @frappe.whitelist()
 def create_soc_request(data, attachments=None):
-    membership = require_partner()
-    values = _data(data)
-    subject = str(values.get("subject") or "").strip()
-    description = str(values.get("description") or "").strip()
-    if not subject or not description:
-        frappe.throw(_("Subjek dan deskripsi wajib diisi."))
-    customer = str(values.get("relevant_customer") or "").strip()
-    if customer:
-        responsible = frappe.db.get_value(
-            "HD Customer", customer, "custom_hrdesk_responsible_partner"
-        )
-        if responsible != membership.partner:
-            frappe.throw(_("Referensi pelanggan tidak berada dalam cakupan partner."))
+    from hrdesk_helpdesk_customizations.soc_service import create_request
 
-    ticket = frappe.new_doc("HD Ticket")
-    ticket.subject = subject[:140]
-    ticket.description = _plain_html(description)
-    ticket.via_customer_portal = 1
-    ticket.custom_portal_request_kind = SOC_REQUEST_KIND
-    ticket.custom_partner_organization = membership.partner
-    ticket.custom_partner_submitted_by = frappe.session.user
-    ticket.custom_relevant_customer = customer or None
-    ticket.agent_group = COMMERCIAL_TEAM
-    ticket.insert(ignore_permissions=True)
-
-    for file in _pending_files(attachments):
-        file.attached_to_doctype = "HD Ticket"
-        file.attached_to_name = ticket.name
-        file.save(ignore_permissions=True)
-    return {"name": ticket.name, "status": ticket.status}
+    return create_request(data, attachments)
 
 
 @frappe.whitelist()
@@ -123,59 +72,17 @@ def customer_options(search=""):
 
 
 @frappe.whitelist()
-def list_soc_requests(scope="mine", limit=20):
-    membership = require_partner()
-    filters = {
-        "custom_portal_request_kind": SOC_REQUEST_KIND,
-        "custom_partner_organization": membership.partner,
-    }
-    if scope == "organization":
-        if not is_request_manager():
-            frappe.throw(_("Akses manajer permintaan diperlukan."), frappe.PermissionError)
-    else:
-        filters["custom_partner_submitted_by"] = frappe.session.user
-    return frappe.get_all(
-        "HD Ticket",
-        filters=filters,
-        fields=PUBLIC_FIELDS,
-        order_by="modified desc",
-        limit_page_length=min(max(int(limit or 20), 1), 100),
-    )
+def list_soc_requests(scope="mine", search="", status="", limit=50):
+    from hrdesk_helpdesk_customizations.soc_service import list_requests
+
+    return list_requests(scope, search, status, limit)
 
 
 @frappe.whitelist()
 def get_soc_request(name):
-    ticket = _soc_ticket(name)
-    result = {field: ticket.get(field) for field in PUBLIC_FIELDS}
-    result["description"] = ticket.description
-    result["replies"] = frappe.get_all(
-        "Communication",
-        filters={"reference_doctype": "HD Ticket", "reference_name": ticket.name},
-        fields=["name", "sender", "content", "communication_date"],
-        order_by="creation asc",
-    )
-    result["attachments"] = _files_for("HD Ticket", ticket.name)
-    for reply in result["replies"]:
-        reply["attachments"] = _files_for("Communication", reply.name)
-    return result
+    from hrdesk_helpdesk_customizations.soc_service import get_request
 
-
-def _files_for(doctype, name):
-    files = frappe.get_all(
-        "File",
-        filters={
-            "attached_to_doctype": doctype,
-            "attached_to_name": name,
-            "is_private": 1,
-        },
-        fields=["name", "file_name"],
-    )
-    for file in files:
-        file["download_url"] = (
-            "/api/method/hrdesk_helpdesk_customizations.api.partner_portal.download"
-            f"?file_name={quote(file.name)}"
-        )
-    return files
+    return get_request(name)
 
 
 @frappe.whitelist()
@@ -193,30 +100,56 @@ def reply(name, message, attachments=None):
 
 @frappe.whitelist()
 def download(file_name):
-    file = frappe.get_doc("File", file_name)
-    if not file.is_private:
-        frappe.throw(_("Lampiran partner harus bersifat privat."), frappe.PermissionError)
-    ticket_name = None
-    if file.attached_to_doctype == "HD Ticket":
-        ticket_name = file.attached_to_name
-    elif file.attached_to_doctype == "Communication":
-        reference = frappe.db.get_value(
-            "Communication",
-            file.attached_to_name,
-            ["reference_doctype", "reference_name"],
-            as_dict=True,
-        )
-        if reference and reference.reference_doctype == "HD Ticket":
-            ticket_name = reference.reference_name
-    if not ticket_name:
-        frappe.throw(_("Lampiran tidak ditemukan."), frappe.DoesNotExistError)
-    _soc_ticket(ticket_name)
-    filename, content = get_file(file.file_url)
-    frappe.local.response.filename = filename
-    frappe.local.response.filecontent = content
-    frappe.local.response.type = "download"
-    frappe.local.response.headers = {
-        "Cache-Control": "private, no-store, max-age=0",
-        "Pragma": "no-cache",
-    }
+    from hrdesk_helpdesk_customizations.soc_service import download_file
+
+    return download_file(file_name)
+
+
+@frappe.whitelist()
+def soc_form_options():
+    from hrdesk_helpdesk_customizations.soc_service import form_options
+
+    return form_options()
+
+
+@frappe.whitelist()
+def update_soc_request(name, data, attachments=None):
+    from hrdesk_helpdesk_customizations.soc_service import update_request
+
+    return update_request(name, data, attachments)
+
+
+@frappe.whitelist()
+def set_soc_status(name, status, revision_reason=""):
+    from hrdesk_helpdesk_customizations.soc_service import set_status
+
+    return set_status(name, status, revision_reason)
+
+
+@frappe.whitelist()
+def soc_print_formats():
+    from hrdesk_helpdesk_customizations.soc_service import print_formats
+
+    return print_formats()
+
+
+@frappe.whitelist()
+def generate_soc_pdf(name, print_format="SOC Request Form - Standard"):
+    from hrdesk_helpdesk_customizations.soc_service import generate_pdf
+
+    return generate_pdf(name, print_format)
+
+
+@frappe.whitelist()
+def list_soc_documents(name):
+    from hrdesk_helpdesk_customizations.soc_service import list_documents_internal
+
+    return list_documents_internal(name)
+
+
+@frappe.whitelist()
+def release_soc_document(document_name, message):
+    from hrdesk_helpdesk_customizations.soc_service import release_document
+
+    return release_document(document_name, message)
 

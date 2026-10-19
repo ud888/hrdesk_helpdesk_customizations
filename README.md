@@ -59,10 +59,12 @@ administrator-editable `custom_hrdesk_audience` value: Public, Customer,
 Partner, or Internal. Existing categories are classified Public on migration so
 the current customer KB remains available.
 
-Partner SOC requests remain native `HD Ticket` records. The server derives the
-submitting user and partner organization from membership. Partner members see
-their own SOC requests; designated request managers see their own partner's SOC
-requests. Internal notes are not returned by the partner APIs.
+Partner SOC conversations remain native `HD Ticket` records. Structured
+commercial data is stored in `HRD SOC Request`, linked one-to-one to the ticket.
+The server derives the submitting user and partner organization from membership.
+Partner members see their own SOC requests; designated request managers see
+their own partner's SOC requests. Internal notes are not returned by the partner
+APIs.
 
 Before enabling partner access, configure the site keys:
 
@@ -79,3 +81,53 @@ Leave team enforcement false until every external L1 agent has an active
 membership, every partner has an L1 team, and every supported customer is mapped
 to its responsible partner. Then set it to true and migrate the explicit site.
 Never use an all-sites migration for this rollout.
+
+## SOC Request Management
+
+The Partner Portal provides **Commercial > SOC Requests** and **Create SOC
+Request**. The implementation reuses Helpdesk ticket status, assignment,
+conversation, reply, notification, attachment, and resolution behavior.
+
+Structured records:
+
+- `HRD SOC Request`: customer, subscription, commercial request status, and the
+  one-to-one `HD Ticket` link.
+- `HRD SOC Request Add-on`: selected add-ons and quantities.
+- `HRD SOC Package`, `HRD SOC Payment Term`, and `HRD SOC Add-on Master`:
+  administrator-maintained form options.
+- `HRD SOC Document`: immutable references to generated private PDF versions and
+  their release metadata.
+
+New partner submissions use a unique browser-generated `client_request_id`.
+Retries with the same key return the existing request instead of creating a
+second request or ticket. Frappe's request transaction rolls back both records
+if either insert fails.
+
+SOC status is separate from Helpdesk ticket status:
+
+`Submitted -> Under Review -> Revision Requested -> Under Review -> Approved -> PDF Sent -> Completed`
+
+HR Desk Commercial users generate a PDF using the standard Frappe Print Format
+`SOC Request Form - Standard`. Generated versions remain private and invisible
+to partners until an agent explicitly uses **Release Latest PDF**. Release calls
+Helpdesk's native `reply_via_agent`, attaches the PDF to the same ticket, and
+preserves the normal outgoing-email and conversation workflow.
+
+Package and payment-term masters are intentionally not seeded because they are
+commercial configuration. The eight approved initial add-ons and the `SOC
+Request` ticket type are created idempotently after migration.
+
+### Safe deployment sequence
+
+1. Verify a current site backup in Frappe Cloud.
+2. Deploy this app revision to a non-production bench first.
+3. Run `bench --site <development-site> migrate`; never use `--site all`.
+4. Configure at least one active `HRD SOC Package` and any required `HRD SOC
+   Payment Term` records.
+5. Confirm the `HR Desk Commercial` team contains the intended Helpdesk agents.
+6. Execute the partner/customer/agent access tests before production approval.
+7. Only after approval, repeat the explicit-site migration on production.
+
+Migration creates DocTypes, one `HD Ticket.custom_soc_request` link, the ticket
+type, print format, and seed add-on records. It does not migrate or rewrite
+existing customer tickets, Knowledge Base records, or legacy SOC tickets.

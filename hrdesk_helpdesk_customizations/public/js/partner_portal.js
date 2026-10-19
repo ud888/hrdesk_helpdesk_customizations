@@ -57,12 +57,14 @@
 
   const loadCustomers = async () => {
     const select = document.querySelector('#hrd-soc-form [name="relevant_customer"]');
+    if (!select) return;
     const rows = await call(`${api}.customer_options`);
     rows.forEach((row) => select.add(new Option(row.customer_name || row.name, row.name)));
   };
 
   const loadRequests = async (scope = "mine") => {
     const target = document.querySelector("#hrd-requests"); empty(target);
+    if (target?.tagName === "TBODY") return;
     const rows = await call(`${api}.list_soc_requests`, { scope });
     if (!rows.length) { target.append(text("Belum ada permintaan SOC.")); return; }
     rows.forEach((row) => {
@@ -93,12 +95,12 @@
   };
 
   const form = document.querySelector("#hrd-soc-form");
-  form?.addEventListener("submit", async (event) => {
+  if (form?.querySelector('[name="subject"]')) form.addEventListener("submit", async (event) => {
     event.preventDefault(); const status = document.querySelector("#hrd-form-status"); status.textContent = "Mengirim…";
     try { const values = new FormData(form); const attachments = await upload(form.elements.attachments.files); const result = await call(`${api}.create_soc_request`, { data: { subject: values.get("subject"), description: values.get("description"), relevant_customer: values.get("relevant_customer") }, attachments }); status.textContent = `Permintaan #${result.name} berhasil dibuat.`; form.reset(); await loadRequests(); } catch (error) { status.textContent = error.message; }
   });
 
-  document.querySelectorAll("[data-scope]").forEach((button) => button.addEventListener("click", () => loadRequests(button.dataset.scope)));
+  if (document.querySelector("#hrd-requests")?.tagName !== "TBODY") document.querySelectorAll("[data-scope]").forEach((button) => button.addEventListener("click", () => loadRequests(button.dataset.scope)));
   let searchTimer;
   document.querySelector("#hrd-kb-search")?.addEventListener("input", (event) => { clearTimeout(searchTimer); searchTimer = setTimeout(() => loadKnowledge(event.target.value.trim()), 300); });
   Promise.all([loadKnowledge(), loadCustomers(), loadRequests()]).catch((error) => console.error("Partner Portal:", error.message));

@@ -32,8 +32,12 @@ class PartnerPortalContractTest(unittest.TestCase):
         api = (ROOT / "hrdesk_helpdesk_customizations" / "api" / "partner_portal.py").read_text(
             encoding="utf-8"
         )
+        service = (ROOT / "hrdesk_helpdesk_customizations" / "soc_service.py").read_text(
+            encoding="utf-8"
+        )
         self.assertNotIn('"HD Ticket Comment"', api)
-        self.assertIn('"Communication"', api)
+        self.assertNotIn('"HD Ticket Comment"', service)
+        self.assertIn('"Communication"', service)
 
     def test_restricted_article_files_are_secured_after_file_creation(self):
         hooks = (ROOT / "hrdesk_helpdesk_customizations" / "hooks.py").read_text(
@@ -52,6 +56,14 @@ class PartnerPortalContractTest(unittest.TestCase):
         )
         self.assertIn('return "1 = 0"', ticket_access)
         self.assertIn("Deactivate partner membership instead of deleting", membership)
+
+    def test_end_customer_is_explicitly_excluded_from_soc_tickets(self):
+        ticket_access = (ROOT / "hrdesk_helpdesk_customizations" / "ticket_access.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("custom_portal_request_kind, '') !=", ticket_access)
+        self.assertIn('if doc.get("custom_portal_request_kind") == SOC_REQUEST_KIND:', ticket_access)
+        self.assertIn("if not membership:\n            return False", ticket_access)
 
 
 if __name__ == "__main__":

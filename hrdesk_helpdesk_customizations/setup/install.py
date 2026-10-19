@@ -15,15 +15,17 @@ from hrdesk_helpdesk_customizations.portal_constants import (
     PARTNER_PORTAL_ROLE,
     PARTNER_REQUEST_MANAGER_ROLE,
     PORTAL_ADMIN_ROLE,
+    SOC_TICKET_TYPE,
 )
 
 
 def configure_site():
     """Idempotent one-site portal configuration, executed after site migration."""
     _ensure_roles()
-    _ensure_custom_fields()
+    _ensure_custom_fields(include_soc=True)
     _classify_existing_categories()
     _ensure_teams()
+    _ensure_soc_configuration()
     _ensure_permissions()
     if portal_team_restrictions_enabled():
         _enforce_team_restriction()
@@ -33,7 +35,7 @@ def configure_site():
 def prepare_schema():
     """Create referenced roles and custom columns before migration-time hooks run."""
     _ensure_roles()
-    _ensure_custom_fields()
+    _ensure_custom_fields(include_soc=False)
 
 
 def _ensure_roles():
@@ -55,9 +57,8 @@ def _field(fieldname, label, fieldtype, **values):
     return {"fieldname": fieldname, "label": label, "fieldtype": fieldtype, **values}
 
 
-def _ensure_custom_fields():
-    create_custom_fields(
-        {
+def _ensure_custom_fields(include_soc=False):
+    fields = {
             "HD Article Category": [
                 _field(
                     "custom_hrdesk_audience",
@@ -143,9 +144,19 @@ def _ensure_custom_fields():
                     "Small Text",
                 ),
             ],
-        },
-        update=True,
-    )
+        }
+    if include_soc:
+        fields["HD Ticket"].append(
+            _field(
+                "custom_soc_request",
+                "SOC Request",
+                "Link",
+                options="HRD SOC Request",
+                read_only=1,
+                in_standard_filter=1,
+            )
+        )
+    create_custom_fields(fields, update=True)
 
 
 def _classify_existing_categories():
@@ -170,6 +181,39 @@ def _ensure_teams():
                     "doctype": "HD Team",
                     "team_name": team,
                     "users": [{"user": "Administrator"}],
+                }
+            ).insert(ignore_permissions=True)
+
+
+def _ensure_soc_configuration():
+    if not frappe.db.exists("HD Ticket Type", SOC_TICKET_TYPE):
+        frappe.get_doc(
+            {
+                "doctype": "HD Ticket Type",
+                "name": SOC_TICKET_TYPE,
+                "description": "Subscription Order Confirmation request",
+                "disabled": 0,
+            }
+        ).insert(ignore_permissions=True)
+
+    if not frappe.db.exists("DocType", "HRD SOC Add-on Master"):
+        return
+    for add_on_name in (
+        "Additional Back Office User",
+        "Payroll Group",
+        "Attendance Machine Integration",
+        "Employee Evaluation Form",
+        "Reimbursement Module",
+        "Flexi Punch Account",
+        "Employee Loan Module",
+        "HR Desk Form",
+    ):
+        if not frappe.db.exists("HRD SOC Add-on Master", add_on_name):
+            frappe.get_doc(
+                {
+                    "doctype": "HRD SOC Add-on Master",
+                    "add_on_name": add_on_name,
+                    "active": 1,
                 }
             ).insert(ignore_permissions=True)
 

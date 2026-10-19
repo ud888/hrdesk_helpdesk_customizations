@@ -17,6 +17,7 @@ INTERNAL_KB_ROLE = "HR Desk Internal Content"
 COMMERCIAL_ROLE = "HR Desk Commercial"
 
 SOC_REQUEST_KIND = "Partner SOC"
+SOC_TICKET_TYPE = "SOC Request"
 CUSTOMER_REQUEST_KIND = "Customer Support"
 COMMERCIAL_TEAM = "HR Desk Commercial"
 INTERNAL_TRIAGE_TEAM = "HR Desk Internal Triage"

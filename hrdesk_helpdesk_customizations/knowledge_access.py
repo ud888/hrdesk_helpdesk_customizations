@@ -149,6 +149,39 @@ def secure_category_attachments(doc, method=None):
 
 def file_has_permission(doc, ptype=None, user=None, debug=False):
     del debug
+    user = user or frappe.session.user
+    if doc.attached_to_doctype == "HRD SOC Document" and doc.attached_to_name:
+        from hrdesk_helpdesk_customizations.soc_access import (
+            soc_document_has_permission,
+        )
+
+        document = frappe.get_doc("HRD SOC Document", doc.attached_to_name)
+        return soc_document_has_permission(document, ptype=ptype, user=user)
+
+    ticket_name = None
+    if doc.attached_to_doctype == "HD Ticket":
+        ticket_name = doc.attached_to_name
+    elif doc.attached_to_doctype == "Communication" and doc.attached_to_name:
+        reference = frappe.db.get_value(
+            "Communication",
+            doc.attached_to_name,
+            ["reference_doctype", "reference_name"],
+            as_dict=True,
+        )
+        if reference and reference.reference_doctype == "HD Ticket":
+            ticket_name = reference.reference_name
+    if ticket_name:
+        from hrdesk_helpdesk_customizations.ticket_access import (
+            ticket_has_permission,
+        )
+
+        ticket = frappe.get_doc("HD Ticket", ticket_name)
+        if ptype in {"read", "select"}:
+            return ticket_has_permission(ticket, ptype=ptype, user=user)
+        from hrdesk_helpdesk_customizations.partner_access import is_internal
+
+        return is_internal(user)
+
     if doc.attached_to_doctype != "HD Article" or not doc.attached_to_name:
         return True
     article = frappe.db.get_value(

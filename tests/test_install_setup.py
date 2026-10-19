@@ -81,6 +81,17 @@ class InstallSetupTest(unittest.TestCase):
             self.assertEqual(team["doctype"], "HD Team")
             self.assertEqual(team["users"], [{"user": "Administrator"}])
 
+    def test_soc_ticket_type_is_bootstrapped_before_optional_seed_data(self):
+        install = importlib.import_module(
+            "hrdesk_helpdesk_customizations.setup.install"
+        )
+
+        install._ensure_soc_configuration()
+
+        self.assertEqual(len(self.created), 1)
+        self.assertEqual(self.created[0]["doctype"], "HD Ticket Type")
+        self.assertEqual(self.created[0]["name"], "SOC Request")
+
 
 if __name__ == "__main__":
     unittest.main()

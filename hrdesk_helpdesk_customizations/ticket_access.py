@@ -30,7 +30,8 @@ def ticket_query(user=None, doctype=None):
     if not membership:
         if has_membership_record(user):
             return "1 = 0"
-        return ""
+        kind = frappe.db.escape(SOC_REQUEST_KIND)
+        return f"COALESCE(`tabHD Ticket`.custom_portal_request_kind, '') != {kind}"
     return ticket_scope_sql(user, membership, frappe.db.escape)
 
 
@@ -40,12 +41,14 @@ def ticket_has_permission(doc, ptype=None, user=None, debug=False):
     if is_internal(user):
         return True
     membership = get_membership(user)
+    if doc.get("custom_portal_request_kind") == SOC_REQUEST_KIND:
+        if not membership:
+            return False
+        return can_access_soc(doc, membership)
     if not membership:
         if has_membership_record(user):
             return False
         return True
-    if doc.get("custom_portal_request_kind") == SOC_REQUEST_KIND:
-        return can_access_soc(doc, membership)
     if user in {doc.owner, doc.contact, doc.raised_by}:
         return True
     if not membership.l1_support_access or not doc.customer:
@@ -92,6 +95,7 @@ def validate_ticket(doc, method=None):
         "custom_portal_request_kind",
         "custom_partner_organization",
         "custom_partner_submitted_by",
+        "custom_soc_request",
         "agent_group",
         "custom_hrdesk_escalated",
         "custom_hrdesk_escalation_summary",

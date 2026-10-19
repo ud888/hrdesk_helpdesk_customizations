@@ -52,12 +52,16 @@ permission_query_conditions = {
     "HD Article": "hrdesk_helpdesk_customizations.knowledge_access.article_query",
     "HD Article Category": "hrdesk_helpdesk_customizations.knowledge_access.category_query",
     "HD Ticket": "hrdesk_helpdesk_customizations.ticket_access.ticket_query",
+    "HRD SOC Request": "hrdesk_helpdesk_customizations.soc_access.soc_request_query",
+    "HRD SOC Document": "hrdesk_helpdesk_customizations.soc_access.soc_document_query",
 }
 
 has_permission = {
     "HD Article": "hrdesk_helpdesk_customizations.knowledge_access.article_has_permission",
     "HD Article Category": "hrdesk_helpdesk_customizations.knowledge_access.category_has_permission",
     "HD Ticket": "hrdesk_helpdesk_customizations.ticket_access.ticket_has_permission",
+    "HRD SOC Request": "hrdesk_helpdesk_customizations.soc_access.soc_request_has_permission",
+    "HRD SOC Document": "hrdesk_helpdesk_customizations.soc_access.soc_document_has_permission",
     "File": "hrdesk_helpdesk_customizations.knowledge_access.file_has_permission",
 }
 

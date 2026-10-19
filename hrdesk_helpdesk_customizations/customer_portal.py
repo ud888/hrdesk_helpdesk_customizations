@@ -10,6 +10,7 @@ from hrdesk_helpdesk_customizations.feature_flags import (
     has_agent_ticket_access,
     is_customer_portal_user,
 )
+from hrdesk_helpdesk_customizations.portal_constants import PARTNER_PORTAL_ROLE
 
 HELPDESK_ROOTS = {"/helpdesk", "/helpdesk/"}
 CUSTOMER_TICKET_PREFIX = "/helpdesk/my-tickets"
@@ -29,6 +30,14 @@ def after_request(response, request) -> None:
         return
     if customer_portal_ticketing_enabled() or not is_customer_portal_user():
         return
+
+    # Partner ticket access remains available while end-customer ticketing is
+    # intentionally disabled. HD Ticket permission hooks still enforce scope.
+    if PARTNER_PORTAL_ROLE in frappe.get_roles(frappe.session.user):
+        from hrdesk_helpdesk_customizations.partner_access import get_membership
+
+        if get_membership():
+            return
 
     path = request.path.rstrip("/") or "/"
     if path == "/helpdesk" or path.startswith(CUSTOMER_TICKET_PREFIX):

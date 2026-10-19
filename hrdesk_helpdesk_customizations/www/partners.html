@@ -8,8 +8,7 @@
     <div><p class="hrd-eyebrow">HR Desk</p><h1>Partner Portal</h1><p>{{ partner_name }} · {{ partner_user }}</p></div>
     <nav aria-label="Navigasi Partner Portal">
       <a href="#knowledge">Knowledge Base Partner</a>
-      <a href="#requests">Permintaan Saya</a>
-      <a href="#submit">Ajukan SOC</a>
+      <details class="hrd-menu"><summary>Commercial</summary><div><a href="#requests">SOC Requests</a><a href="#submit">Create SOC Request</a></div></details>
       {% if l1_support_access %}<a href="https://support.hrdesk.id/helpdesk/tickets">Workspace L1 Support</a>{% endif %}
       <a href="/api/method/logout">Keluar</a>
     </nav>
@@ -28,24 +27,64 @@
   </section>
 
   <section id="submit" class="hrd-section">
-    <h2>Ajukan Permintaan SOC</h2>
+    <div class="hrd-section-heading"><div><p class="hrd-eyebrow">Commercial</p><h2 id="hrd-soc-form-title">Create SOC Request</h2></div><button id="hrd-cancel-edit" type="button" hidden>Batalkan Revisi</button></div>
     <form id="hrd-soc-form">
-      <label>Subjek<input name="subject" required maxlength="140"></label>
-      <label>Deskripsi<textarea name="description" required rows="6"></textarea></label>
-      <label>Pelanggan terkait<select name="relevant_customer"><option value="">Tidak ada / belum ditentukan</option></select></label>
+      <fieldset>
+        <legend>Header</legend>
+        <div class="hrd-form-grid">
+          <label>SOC Type<select name="soc_type" required></select></label>
+          <label>Partner<input name="partner_display" readonly></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>A. End Customer Information</legend>
+        <div class="hrd-form-grid">
+          <label>Existing Customer<select name="customer"><option value="">Customer baru / belum terdaftar</option></select></label>
+          <label>Customer Company Name<input name="customer_company_name" required maxlength="140"></label>
+          <label class="hrd-span-2">Customer Address<textarea name="customer_address" rows="3"></textarea></label>
+          <label>Customer PIC Name<input name="customer_pic_name" maxlength="140"></label>
+          <label>Customer PIC Position<input name="customer_pic_position" maxlength="140"></label>
+          <label>Customer PIC Email<input name="customer_pic_email" type="email"></label>
+          <label>Customer PIC Phone<input name="customer_pic_phone" type="tel"></label>
+          <label>Email for Super Admin<input name="super_admin_email" type="email"></label>
+          <label>Domain Workspace<input name="domain_workspace" maxlength="140"></label>
+          <label>Reseller Billing Contact Email<input name="reseller_billing_contact_email" type="email"></label>
+          <label>Reseller Billing Contact Phone<input name="reseller_billing_contact_phone" type="tel"></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>B. Subscription Information</legend>
+        <div class="hrd-form-grid">
+          <label>Package Type<select name="package_type" required></select></label>
+          <label>Term of Payment to HR Desk<select name="payment_term"><option value="">Pilih payment term</option></select></label>
+          <label>Subscription Start Date<input name="subscription_start_date" type="date"></label>
+          <label>Subscription End Date<input name="subscription_end_date" type="date"></label>
+          <label>Go-Live Target Date<input name="go_live_target_date" type="date"></label>
+          <label>Estimated Employee Count<input name="estimated_employee_count" type="number" min="0" value="0"></label>
+          <label>Number of Admin Users<input name="number_of_admin_users" type="number" min="0" value="0"></label>
+          <label>Number of Payroll Groups<input name="number_of_payroll_groups" type="number" min="0" value="0"></label>
+          <label class="hrd-check"><input name="implementation_included" type="checkbox"> Implementation Included</label>
+          <label class="hrd-check"><input name="training_included" type="checkbox"> Training Included</label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>C. Module &amp; Add-On Selection</legend>
+        <div class="hrd-table-wrap"><table class="hrd-table"><thead><tr><th>Pilih</th><th>Module / Add-on</th><th>Quantity</th></tr></thead><tbody id="hrd-add-ons"></tbody></table></div>
+      </fieldset>
       <label>Lampiran privat<input name="attachments" type="file" multiple></label>
-      <button class="hrd-primary" type="submit">Kirim Permintaan</button>
+      <button id="hrd-soc-submit" class="hrd-primary" type="submit">Kirim Permintaan SOC</button>
       <p id="hrd-form-status" role="status"></p>
     </form>
   </section>
 
   <section id="requests" class="hrd-section">
-    <div class="hrd-section-heading"><h2>Permintaan Partner</h2>{% if request_manager %}<button type="button" data-scope="organization">Lihat Organisasi</button>{% endif %}</div>
-    <button type="button" data-scope="mine">Milik Saya</button>
-    <div id="hrd-requests" class="hrd-list" aria-live="polite"></div>
+    <div class="hrd-section-heading"><div><p class="hrd-eyebrow">Commercial</p><h2>SOC Requests</h2></div><div class="hrd-actions"><button type="button" data-scope="mine">Milik Saya</button>{% if request_manager %}<button type="button" data-scope="organization">Organisasi</button>{% endif %}</div></div>
+    <div class="hrd-filters"><label>Cari<input id="hrd-request-search" type="search" placeholder="Nomor SOC atau customer"></label><label>Status<select id="hrd-request-status"><option value="">Semua status</option><option>Submitted</option><option>Under Review</option><option>Revision Requested</option><option>Approved</option><option>PDF Sent</option><option>Completed</option><option>Cancelled</option></select></label></div>
+    <div class="hrd-table-wrap"><table class="hrd-table"><thead><tr><th>SOC Request</th><th>Submission Date</th><th>Customer</th><th>Package</th><th>Subscription</th><th>SOC Status</th><th>Ticket Status</th><th>Last Updated</th><th></th></tr></thead><tbody id="hrd-requests" aria-live="polite"></tbody></table></div>
     <article id="hrd-request-detail" class="hrd-detail" hidden></article>
   </section>
 </main>
 <script src="/assets/hrdesk_helpdesk_customizations/js/partner_portal.js"></script>
+<script src="/assets/hrdesk_helpdesk_customizations/js/soc_portal.js"></script>
 {% endblock %}
 
