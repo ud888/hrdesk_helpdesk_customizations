@@ -35,6 +35,19 @@ class SOCContractTest(unittest.TestCase):
         child_fields = {field["fieldname"]: field for field in child["fields"]}
         self.assertEqual(child_fields["add_on"]["options"], "HRD SOC Add-on Master")
 
+    def test_hyphenated_doctypes_expose_frappe_controller_aliases(self):
+        master = (
+            MODULE / "doctype" / "hrd_soc_add_on_master" / "hrd_soc_add_on_master.py"
+        ).read_text(encoding="utf-8")
+        child = (
+            MODULE
+            / "doctype"
+            / "hrd_soc_request_add_on"
+            / "hrd_soc_request_add_on.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("HRDSOCAddonMaster = HRDSOCAddOnMaster", master)
+        self.assertIn("HRDSOCRequestAddon = HRDSOCRequestAddOn", child)
+
     def test_partner_has_no_direct_doctype_permission(self):
         for doctype in ("hrd_soc_request", "hrd_soc_document"):
             data = self.read_json("doctype", doctype, f"{doctype}.json")
