@@ -1,4 +1,5 @@
 import frappe
+from werkzeug.routing import RequestRedirect
 
 from hrdesk_helpdesk_customizations.portal_constants import PARTNER_DOMAIN
 
@@ -9,7 +10,9 @@ def before_request():
         return
     host = (request.host or "").split(":", 1)[0].lower()
     if host == PARTNER_DOMAIN and request.path in {"", "/"}:
-        frappe.redirect("/partners")
+        redirect = RequestRedirect("/partners")
+        redirect.code = 302
+        raise redirect
 
 
 def after_request(response, request):
