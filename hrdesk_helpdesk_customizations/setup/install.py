@@ -108,7 +108,7 @@ def _ensure_custom_fields(include_soc=False):
                     options="Customer Support\nPartner SOC",
                     default="Customer Support",
                     read_only=1,
-                    in_standard_filter=1,
+                    in_standard_filter=0,
                 ),
                 _field(
                     "custom_partner_organization",
@@ -116,7 +116,7 @@ def _ensure_custom_fields(include_soc=False):
                     "Link",
                     options="HD Customer",
                     read_only=1,
-                    in_standard_filter=1,
+                    in_standard_filter=0,
                 ),
                 _field(
                     "custom_partner_submitted_by",
@@ -153,7 +153,7 @@ def _ensure_custom_fields(include_soc=False):
                 "Link",
                 options="HRD SOC Request",
                 read_only=1,
-                in_standard_filter=1,
+                in_standard_filter=0,
             )
         )
     create_custom_fields(fields, update=True)
