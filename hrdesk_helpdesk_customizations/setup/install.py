@@ -16,6 +16,7 @@ from hrdesk_helpdesk_customizations.portal_constants import (
     PARTNER_REQUEST_MANAGER_ROLE,
     PORTAL_ADMIN_ROLE,
     SOC_TICKET_TYPE,
+    TECHNICAL_ROLE,
 )
 
 
@@ -46,6 +47,7 @@ def _ensure_roles():
         (KB_EDITOR_ROLE, 1),
         (INTERNAL_KB_ROLE, 1),
         (COMMERCIAL_ROLE, 1),
+        (TECHNICAL_ROLE, 1),
     ):
         if not frappe.db.exists("Role", role):
             frappe.get_doc(
@@ -108,7 +110,7 @@ def _ensure_custom_fields(include_soc=False):
                     options="Customer Support\nPartner SOC",
                     default="Customer Support",
                     read_only=1,
-                    in_standard_filter=1,
+                    in_standard_filter=0,
                 ),
                 _field(
                     "custom_partner_organization",
@@ -116,7 +118,7 @@ def _ensure_custom_fields(include_soc=False):
                     "Link",
                     options="HD Customer",
                     read_only=1,
-                    in_standard_filter=1,
+                    in_standard_filter=0,
                 ),
                 _field(
                     "custom_partner_submitted_by",
@@ -153,7 +155,7 @@ def _ensure_custom_fields(include_soc=False):
                 "Link",
                 options="HRD SOC Request",
                 read_only=1,
-                in_standard_filter=1,
+                in_standard_filter=0,
             )
         )
     create_custom_fields(fields, update=True)

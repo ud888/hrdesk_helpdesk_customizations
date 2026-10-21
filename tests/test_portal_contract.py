@@ -1,5 +1,6 @@
 import json
 import pathlib
+import re
 import unittest
 
 
@@ -7,6 +8,30 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 class PartnerPortalContractTest(unittest.TestCase):
+    def test_soc_ticket_fields_are_not_standard_quick_filters(self):
+        setup = (
+            ROOT
+            / "hrdesk_helpdesk_customizations"
+            / "setup"
+            / "install.py"
+        ).read_text(encoding="utf-8")
+        for fieldname in (
+            "custom_partner_organization",
+            "custom_portal_request_kind",
+            "custom_soc_request",
+        ):
+            with self.subTest(fieldname=fieldname):
+                field_definition = re.search(
+                    rf'_field\(\s*"{fieldname}"(?P<body>.*?)\n\s*\)',
+                    setup,
+                    re.DOTALL,
+                )
+                self.assertIsNotNone(field_definition)
+                self.assertIn(
+                    "in_standard_filter=0",
+                    field_definition.group("body"),
+                )
+
     def test_membership_schema_has_unique_user_and_partner(self):
         path = ROOT / "hrdesk_helpdesk_customizations" / "hr_desk_helpdesk_customizations" / "doctype" / "hrd_partner_membership" / "hrd_partner_membership.json"
         data = json.loads(path.read_text(encoding="utf-8"))

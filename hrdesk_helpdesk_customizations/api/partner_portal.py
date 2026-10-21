@@ -86,6 +86,13 @@ def get_soc_request(name):
 
 
 @frappe.whitelist()
+def get_workspace_handoff(name):
+    from hrdesk_helpdesk_customizations.soc_service import get_workspace_handoff as get_handoff
+
+    return get_handoff(name)
+
+
+@frappe.whitelist()
 def reply(name, message, attachments=None):
     ticket = _soc_ticket(name)
     if not str(message or "").strip():
@@ -134,10 +141,17 @@ def soc_print_formats():
 
 
 @frappe.whitelist()
-def generate_soc_pdf(name, print_format="SOC Request Form - Standard"):
-    from hrdesk_helpdesk_customizations.soc_service import generate_pdf
+def generate_soc_documents(name):
+    from hrdesk_helpdesk_customizations.soc_service import generate_document_pair
 
-    return generate_pdf(name, print_format)
+    return generate_document_pair(name)
+
+
+@frappe.whitelist()
+def generate_soc_pdf(name, print_format=""):
+    """Backward-compatible alias; the approved workflow always generates a pair."""
+    del print_format
+    return generate_soc_documents(name)
 
 
 @frappe.whitelist()
@@ -148,8 +162,86 @@ def list_soc_documents(name):
 
 
 @frappe.whitelist()
-def release_soc_document(document_name, message):
-    from hrdesk_helpdesk_customizations.soc_service import release_document
+def publish_soc_documents(name, message):
+    from hrdesk_helpdesk_customizations.soc_service import publish_document_pair
 
-    return release_document(document_name, message)
+    return publish_document_pair(name, message)
+
+
+@frappe.whitelist()
+def release_soc_document(document_name, message):
+    """Backward-compatible alias that publishes the complete document pair."""
+    name = frappe.db.get_value("HRD SOC Document", document_name, "soc_request")
+    if not name:
+        frappe.throw(_("Dokumen SOC tidak ditemukan."), frappe.DoesNotExistError)
+    return publish_soc_documents(name, message)
+
+
+@frappe.whitelist()
+def submit_signed_documents(name, partner_soc_file, customer_sac_file, message=""):
+    from hrdesk_helpdesk_customizations.soc_service import submit_signed_document_pair
+
+    return submit_signed_document_pair(
+        name, partner_soc_file, customer_sac_file, message
+    )
+
+
+@frappe.whitelist()
+def reject_signed_documents(name, reason):
+    from hrdesk_helpdesk_customizations.soc_service import reject_signed_documents as reject
+
+    return reject(name, reason)
+
+
+@frappe.whitelist()
+def approve_workspace_creation(name, acceptance_confirmed=0):
+    from hrdesk_helpdesk_customizations.soc_service import approve_workspace_creation as approve
+
+    return approve(name, acceptance_confirmed)
+
+
+@frappe.whitelist()
+def reopen_for_amendment(name, reason):
+    from hrdesk_helpdesk_customizations.soc_service import reopen_for_amendment as reopen
+
+    return reopen(name, reason)
+
+
+@frappe.whitelist()
+def request_cancellation(name, reason):
+    from hrdesk_helpdesk_customizations.soc_service import request_cancellation as request
+
+    return request(name, reason)
+
+
+@frappe.whitelist()
+def approve_cancellation(name):
+    from hrdesk_helpdesk_customizations.soc_service import approve_cancellation as approve
+
+    return approve(name)
+
+
+@frappe.whitelist()
+def record_provisioning_failure(name, error_summary):
+    from hrdesk_helpdesk_customizations.soc_service import record_provisioning_failure as record
+
+    return record(name, error_summary)
+
+
+@frappe.whitelist()
+def complete_workspace(
+    name, workspace_reference, access_username, access_secret, instructions=""
+):
+    from hrdesk_helpdesk_customizations.soc_service import complete_workspace as complete
+
+    return complete(
+        name, workspace_reference, access_username, access_secret, instructions
+    )
+
+
+@frappe.whitelist()
+def emergency_override_status(name, status, reason):
+    from hrdesk_helpdesk_customizations.soc_service import emergency_override_status as override
+
+    return override(name, status, reason)
 

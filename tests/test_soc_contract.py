@@ -58,7 +58,81 @@ class SOCContractTest(unittest.TestCase):
         service = (PACKAGE / "soc_service.py").read_text(encoding="utf-8")
         self.assertIn("ticket.reply_via_agent", service)
         self.assertIn("is_private=1", service)
-        self.assertIn('document.released = 1', service)
+        self.assertIn("publish_document_pair", service)
+        self.assertIn('document.document_status = "Published"', service)
+
+    def test_workflow_has_paired_documents_and_protected_handoff(self):
+        request = self.read_json(
+            "doctype", "hrd_soc_request", "hrd_soc_request.json"
+        )
+        fields = {field["fieldname"]: field for field in request["fields"]}
+        self.assertEqual(
+            fields["soc_status"]["options"].splitlines(),
+            [
+                "SOC Requested",
+                "SOC Published",
+                "SOC Signed",
+                "Workspace Creation",
+                "Workspace Created",
+                "Cancelled",
+            ],
+        )
+        document = self.read_json(
+            "doctype", "hrd_soc_document", "hrd_soc_document.json"
+        )
+        document_fields = {field["fieldname"]: field for field in document["fields"]}
+        self.assertIn("Partner SOC", document_fields["document_type"]["options"])
+        self.assertIn("End Customer SAC", document_fields["document_type"]["options"])
+        handoff = self.read_json(
+            "doctype", "hrd_soc_handoff", "hrd_soc_handoff.json"
+        )
+        handoff_fields = {field["fieldname"]: field for field in handoff["fields"]}
+        self.assertEqual(handoff_fields["access_secret"]["fieldtype"], "Password")
+        self.assertNotIn("Partner Portal User", {row["role"] for row in handoff["permissions"]})
+        service = (PACKAGE / "soc_service.py").read_text(encoding="utf-8")
+        self.assertIn("frappe.session.user != request.submitted_by", service)
+        self.assertIn("def get_workspace_handoff", service)
+
+    def test_hds_is_authority_superset_and_hdt_is_restricted(self):
+        service = (PACKAGE / "soc_service.py").read_text(encoding="utf-8")
+        self.assertIn("{COMMERCIAL_ROLE, TECHNICAL_ROLE}", service)
+        self.assertIn("def require_hds", service)
+        self.assertIn("def require_hdt", service)
+        request = self.read_json(
+            "doctype", "hrd_soc_request", "hrd_soc_request.json"
+        )
+        permissions = {row["role"]: row for row in request["permissions"]}
+        self.assertEqual(permissions["HR Desk Technical"]["read"], 1)
+        self.assertNotIn("create", permissions["HR Desk Technical"])
+
+    def test_print_formats_use_blank_signature_placeholders(self):
+        for directory, filename in (
+            ("partner_soc_new_customer", "partner_soc_new_customer.json"),
+            ("end_customer_sac_new_customer", "end_customer_sac_new_customer.json"),
+        ):
+            data = self.read_json("print_format", directory, filename)
+            self.assertIn("[Tanda Tangan]", data["html"])
+            self.assertIn("[Nama]", data["html"])
+            self.assertIn("[Jabatan]", data["html"])
+            self.assertIn("[Tanggal]", data["html"])
+
+    def test_request_captures_template_commercial_fields(self):
+        request = self.read_json(
+            "doctype", "hrd_soc_request", "hrd_soc_request.json"
+        )
+        fields = {field["fieldname"] for field in request["fields"]}
+        self.assertTrue(
+            {
+                "customer_tax_id",
+                "super_admin_name",
+                "super_admin_position",
+                "subscription_number",
+                "package_description",
+                "monthly_price",
+                "partner_discount_percent",
+                "payment_scheme",
+            }.issubset(fields)
+        )
 
     def test_file_permission_hook_covers_soc_documents_and_tickets(self):
         access = (PACKAGE / "knowledge_access.py").read_text(encoding="utf-8")

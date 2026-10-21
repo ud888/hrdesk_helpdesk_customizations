@@ -4,34 +4,54 @@ from datetime import date
 
 
 SOC_STATUSES = (
-    "Draft",
-    "Submitted",
-    "Under Review",
-    "Revision Requested",
-    "Approved",
-    "PDF Sent",
-    "Completed",
+    "SOC Requested",
+    "SOC Published",
+    "SOC Signed",
+    "Workspace Creation",
+    "Workspace Created",
     "Cancelled",
 )
 
 SOC_TYPES = ("New Subscription", "Renewal", "Addendum")
 
 STATUS_TRANSITIONS = {
-    "Draft": {"Submitted", "Cancelled"},
-    "Submitted": {"Under Review", "Cancelled"},
-    "Under Review": {"Revision Requested", "Approved", "Cancelled"},
-    "Revision Requested": {"Under Review", "Cancelled"},
-    "Approved": {"Under Review", "PDF Sent", "Cancelled"},
-    "PDF Sent": {"Under Review", "Completed"},
-    "Completed": set(),
+    "SOC Requested": {"SOC Published", "Cancelled"},
+    "SOC Published": {"SOC Requested", "SOC Signed", "Cancelled"},
+    "SOC Signed": {"SOC Requested", "SOC Published", "Workspace Creation", "Cancelled"},
+    "Workspace Creation": {"Workspace Created", "Cancelled"},
+    "Workspace Created": set(),
     "Cancelled": set(),
 }
+
+HDS_TRANSITIONS = {
+    ("SOC Requested", "SOC Published"),
+    ("SOC Published", "SOC Requested"),
+    ("SOC Signed", "SOC Requested"),
+    ("SOC Signed", "SOC Published"),
+    ("SOC Signed", "Workspace Creation"),
+}
+
+PARTNER_TRANSITIONS = {("SOC Published", "SOC Signed")}
+HDT_TRANSITIONS = {("Workspace Creation", "Workspace Created")}
 
 
 def can_transition(current: str, target: str) -> bool:
     if current == target:
         return True
     return target in STATUS_TRANSITIONS.get(current, set())
+
+
+def actor_can_transition(actor: str, current: str, target: str) -> bool:
+    transition = (current, target)
+    if target == "Cancelled":
+        return actor == "hds"
+    if actor == "hds":
+        return transition in HDS_TRANSITIONS or transition in HDT_TRANSITIONS
+    if actor == "hdt":
+        return transition in HDT_TRANSITIONS
+    if actor == "partner":
+        return transition in PARTNER_TRANSITIONS
+    return False
 
 
 def subscription_period(start_date: date | None, end_date: date | None) -> str:

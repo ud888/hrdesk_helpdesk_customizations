@@ -2,6 +2,7 @@ import datetime
 import unittest
 
 from hrdesk_helpdesk_customizations.soc_rules import (
+    actor_can_transition,
     can_transition,
     normalize_nonnegative,
     subscription_period,
@@ -10,20 +11,26 @@ from hrdesk_helpdesk_customizations.soc_rules import (
 
 class SOCRulesTest(unittest.TestCase):
     def test_expected_review_transitions(self):
-        self.assertTrue(can_transition("Submitted", "Under Review"))
-        self.assertTrue(can_transition("Under Review", "Revision Requested"))
-        self.assertTrue(can_transition("Revision Requested", "Under Review"))
-        self.assertTrue(can_transition("Under Review", "Approved"))
-        self.assertTrue(can_transition("Approved", "PDF Sent"))
-        self.assertTrue(can_transition("PDF Sent", "Completed"))
+        self.assertTrue(can_transition("SOC Requested", "SOC Published"))
+        self.assertTrue(can_transition("SOC Published", "SOC Signed"))
+        self.assertTrue(can_transition("SOC Signed", "Workspace Creation"))
+        self.assertTrue(can_transition("Workspace Creation", "Workspace Created"))
 
     def test_terminal_statuses_cannot_reopen(self):
-        self.assertFalse(can_transition("Completed", "Under Review"))
-        self.assertFalse(can_transition("Cancelled", "Submitted"))
+        self.assertFalse(can_transition("Workspace Created", "SOC Requested"))
+        self.assertFalse(can_transition("Cancelled", "SOC Requested"))
 
     def test_approved_data_can_return_to_review(self):
-        self.assertTrue(can_transition("Approved", "Under Review"))
-        self.assertTrue(can_transition("PDF Sent", "Under Review"))
+        self.assertTrue(can_transition("SOC Published", "SOC Requested"))
+        self.assertTrue(can_transition("SOC Signed", "SOC Requested"))
+
+    def test_role_ownership_matches_approved_hierarchy(self):
+        self.assertTrue(actor_can_transition("partner", "SOC Published", "SOC Signed"))
+        self.assertFalse(actor_can_transition("partner", "SOC Signed", "Workspace Creation"))
+        self.assertTrue(actor_can_transition("hds", "SOC Signed", "Workspace Creation"))
+        self.assertTrue(actor_can_transition("hds", "Workspace Creation", "Workspace Created"))
+        self.assertTrue(actor_can_transition("hdt", "Workspace Creation", "Workspace Created"))
+        self.assertFalse(actor_can_transition("hdt", "SOC Signed", "Workspace Creation"))
 
     def test_subscription_period_is_display_only_date_range(self):
         result = subscription_period(

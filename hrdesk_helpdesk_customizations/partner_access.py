@@ -11,6 +11,7 @@ from hrdesk_helpdesk_customizations.portal_constants import (
     KB_EDITOR_ROLE,
     PARTNER_REQUEST_MANAGER_ROLE,
     PORTAL_ADMIN_ROLE,
+    TECHNICAL_ROLE,
 )
 
 INTERNAL_ROLES = {
@@ -20,6 +21,7 @@ INTERNAL_ROLES = {
     INTERNAL_KB_ROLE,
     KB_EDITOR_ROLE,
     COMMERCIAL_ROLE,
+    TECHNICAL_ROLE,
 }
 EDITOR_ROLES = {"Administrator", "System Manager", KB_EDITOR_ROLE}
 PORTAL_ADMIN_ROLES = {"Administrator", "System Manager", PORTAL_ADMIN_ROLE}

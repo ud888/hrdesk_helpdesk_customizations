@@ -4,16 +4,18 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "request_tab", "soc_type", "soc_status", "submission_date", "submitted_by", "column_break_header", "partner", "ticket", "client_request_id",
-  "customer_tab", "customer", "customer_company_name", "customer_address", "customer_pic_name", "customer_pic_position", "customer_contact_column", "customer_pic_email", "customer_pic_phone", "super_admin_email", "domain_workspace", "reseller_billing_contact_email", "reseller_billing_contact_phone",
+  "request_tab", "soc_type", "soc_status", "request_version", "submission_date", "submitted_by", "column_break_header", "partner", "ticket", "client_request_id",
+  "customer_tab", "customer", "customer_company_name", "customer_address", "customer_tax_id", "customer_pic_name", "customer_pic_position", "customer_contact_column", "customer_pic_email", "customer_pic_phone", "super_admin_name", "super_admin_position", "super_admin_email", "domain_workspace", "reseller_billing_contact_email", "reseller_billing_contact_phone",
   "subscription_tab", "package_type", "subscription_start_date", "subscription_end_date", "subscription_period", "payment_term", "subscription_column", "go_live_target_date", "estimated_employee_count", "number_of_admin_users", "number_of_payroll_groups", "implementation_included", "training_included",
+  "commercial_tab", "subscription_number", "package_description", "monthly_price", "annual_subtotal", "commercial_column", "partner_discount_percent", "annual_total_after_discount", "payment_scheme",
   "add_on_tab", "add_ons",
-  "review_tab", "revision_reason", "approved_by", "approved_on"
+  "review_tab", "partner_update_allowed", "revision_reason", "signature_rejection_reason", "published_by", "published_on", "signed_by", "signed_on", "review_column", "workspace_approved_by", "workspace_approved_on", "workspace_created_by", "workspace_created_on", "workspace_reference", "cancellation_section", "cancellation_requested_by", "cancellation_requested_on", "cancellation_reason", "cancelled_by", "cancelled_on", "last_transition_by", "last_transition_on"
  ],
  "fields": [
   {"fieldname": "request_tab", "fieldtype": "Tab Break", "label": "Request"},
   {"fieldname": "soc_type", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "SOC Type", "options": "New Subscription\nRenewal\nAddendum", "reqd": 1},
-  {"default": "Draft", "fieldname": "soc_status", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "SOC Status", "options": "Draft\nSubmitted\nUnder Review\nRevision Requested\nApproved\nPDF Sent\nCompleted\nCancelled", "reqd": 1},
+  {"default": "SOC Requested", "fieldname": "soc_status", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "SOC Status", "options": "SOC Requested\nSOC Published\nSOC Signed\nWorkspace Creation\nWorkspace Created\nCancelled", "read_only": 1, "reqd": 1},
+  {"default": "1", "fieldname": "request_version", "fieldtype": "Int", "label": "Request Version", "read_only": 1, "reqd": 1},
   {"fieldname": "submission_date", "fieldtype": "Date", "in_list_view": 1, "in_standard_filter": 1, "label": "Submission Date", "read_only": 1},
   {"fieldname": "submitted_by", "fieldtype": "Link", "label": "Submitted By", "options": "User", "read_only": 1},
   {"fieldname": "column_break_header", "fieldtype": "Column Break"},
@@ -25,11 +27,14 @@
   {"fieldname": "customer", "fieldtype": "Link", "in_standard_filter": 1, "label": "Existing Customer", "options": "HD Customer"},
   {"fieldname": "customer_company_name", "fieldtype": "Data", "in_list_view": 1, "label": "Customer Company Name", "reqd": 1},
   {"fieldname": "customer_address", "fieldtype": "Small Text", "label": "Customer Address"},
+  {"fieldname": "customer_tax_id", "fieldtype": "Data", "label": "Customer Tax ID / NPWP"},
   {"fieldname": "customer_pic_name", "fieldtype": "Data", "label": "Customer PIC Name"},
   {"fieldname": "customer_pic_position", "fieldtype": "Data", "label": "Customer PIC Position"},
   {"fieldname": "customer_contact_column", "fieldtype": "Column Break"},
   {"fieldname": "customer_pic_email", "fieldtype": "Data", "label": "Customer PIC Email", "options": "Email"},
   {"fieldname": "customer_pic_phone", "fieldtype": "Data", "label": "Customer PIC Phone", "options": "Phone"},
+  {"fieldname": "super_admin_name", "fieldtype": "Data", "label": "Super Admin Name"},
+  {"fieldname": "super_admin_position", "fieldtype": "Data", "label": "Super Admin Position"},
   {"fieldname": "super_admin_email", "fieldtype": "Data", "label": "Email for Super Admin", "options": "Email"},
   {"fieldname": "domain_workspace", "fieldtype": "Data", "label": "Domain Workspace"},
   {"fieldname": "reseller_billing_contact_email", "fieldtype": "Data", "label": "Reseller Billing Contact Email", "options": "Email"},
@@ -49,13 +54,41 @@
   {"default": "0", "fieldname": "implementation_included", "fieldtype": "Check", "label": "Implementation Included"},
   {"default": "0", "fieldname": "training_included", "fieldtype": "Check", "label": "Training Included"},
 
+  {"fieldname": "commercial_tab", "fieldtype": "Tab Break", "label": "Commercial"},
+  {"fieldname": "subscription_number", "fieldtype": "Data", "label": "Subscription Number"},
+  {"fieldname": "package_description", "fieldtype": "Small Text", "label": "Package Description"},
+  {"fieldname": "monthly_price", "fieldtype": "Currency", "label": "Monthly Price"},
+  {"fieldname": "annual_subtotal", "fieldtype": "Currency", "label": "Annual Subtotal", "read_only": 1},
+  {"fieldname": "commercial_column", "fieldtype": "Column Break"},
+  {"fieldname": "partner_discount_percent", "fieldtype": "Percent", "label": "Partner Discount Percent"},
+  {"fieldname": "annual_total_after_discount", "fieldtype": "Currency", "label": "Annual Total After Discount", "read_only": 1},
+  {"fieldname": "payment_scheme", "fieldtype": "Small Text", "label": "Payment Scheme"},
+
   {"fieldname": "add_on_tab", "fieldtype": "Tab Break", "label": "Module & Add-on"},
   {"fieldname": "add_ons", "fieldtype": "Table", "label": "Module & Add-on Selection", "options": "HRD SOC Request Add-on"},
 
   {"fieldname": "review_tab", "fieldtype": "Tab Break", "label": "Review"},
+  {"default": "0", "fieldname": "partner_update_allowed", "fieldtype": "Check", "label": "Partner Update Allowed", "read_only": 1},
   {"fieldname": "revision_reason", "fieldtype": "Small Text", "label": "Revision Reason"},
-  {"fieldname": "approved_by", "fieldtype": "Link", "label": "Approved By", "options": "User", "read_only": 1},
-  {"fieldname": "approved_on", "fieldtype": "Datetime", "label": "Approved On", "read_only": 1}
+  {"fieldname": "signature_rejection_reason", "fieldtype": "Small Text", "label": "Signature Rejection Reason", "read_only": 1},
+  {"fieldname": "published_by", "fieldtype": "Link", "label": "Published By", "options": "User", "read_only": 1},
+  {"fieldname": "published_on", "fieldtype": "Datetime", "label": "Published On", "read_only": 1},
+  {"fieldname": "signed_by", "fieldtype": "Link", "label": "Signed Documents Submitted By", "options": "User", "read_only": 1},
+  {"fieldname": "signed_on", "fieldtype": "Datetime", "label": "Signed Documents Submitted On", "read_only": 1},
+  {"fieldname": "review_column", "fieldtype": "Column Break"},
+  {"fieldname": "workspace_approved_by", "fieldtype": "Link", "label": "Workspace Approved By", "options": "User", "read_only": 1},
+  {"fieldname": "workspace_approved_on", "fieldtype": "Datetime", "label": "Workspace Approved On", "read_only": 1},
+  {"fieldname": "workspace_created_by", "fieldtype": "Link", "label": "Workspace Created By", "options": "User", "read_only": 1},
+  {"fieldname": "workspace_created_on", "fieldtype": "Datetime", "label": "Workspace Created On", "read_only": 1},
+  {"fieldname": "workspace_reference", "fieldtype": "Data", "label": "Workspace Reference", "read_only": 1},
+  {"fieldname": "cancellation_section", "fieldtype": "Section Break", "label": "Cancellation and Audit"},
+  {"fieldname": "cancellation_requested_by", "fieldtype": "Link", "label": "Cancellation Requested By", "options": "User", "read_only": 1},
+  {"fieldname": "cancellation_requested_on", "fieldtype": "Datetime", "label": "Cancellation Requested On", "read_only": 1},
+  {"fieldname": "cancellation_reason", "fieldtype": "Small Text", "label": "Cancellation Reason", "read_only": 1},
+  {"fieldname": "cancelled_by", "fieldtype": "Link", "label": "Cancelled By", "options": "User", "read_only": 1},
+  {"fieldname": "cancelled_on", "fieldtype": "Datetime", "label": "Cancelled On", "read_only": 1},
+  {"fieldname": "last_transition_by", "fieldtype": "Link", "label": "Last Transition By", "options": "User", "read_only": 1},
+  {"fieldname": "last_transition_on", "fieldtype": "Datetime", "label": "Last Transition On", "read_only": 1}
  ],
  "links": [
   {"link_doctype": "HRD SOC Document", "link_fieldname": "soc_request"}
@@ -64,8 +97,9 @@
  "name": "HRD SOC Request",
  "permissions": [
   {"create": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "write": 1},
-  {"create": 1, "print": 1, "read": 1, "report": 1, "role": "HR Desk Portal Administrator", "write": 1},
-  {"create": 1, "print": 1, "read": 1, "report": 1, "role": "HR Desk Commercial", "write": 1}
+  {"print": 1, "read": 1, "report": 1, "role": "HR Desk Portal Administrator"},
+  {"create": 1, "print": 1, "read": 1, "report": 1, "role": "HR Desk Commercial", "write": 1},
+  {"print": 1, "read": 1, "report": 1, "role": "HR Desk Technical", "write": 1}
  ],
  "search_fields": "customer_company_name,partner,ticket",
  "sort_field": "modified",

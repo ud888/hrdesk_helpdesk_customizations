@@ -74,12 +74,13 @@
   const formData = () => ({
     client_request_id: form.dataset.clientRequestId,
     soc_type: value("soc_type"), customer: value("customer"), customer_company_name: value("customer_company_name").trim(),
-    customer_address: value("customer_address").trim(), customer_pic_name: value("customer_pic_name").trim(), customer_pic_position: value("customer_pic_position").trim(),
-    customer_pic_email: value("customer_pic_email").trim(), customer_pic_phone: value("customer_pic_phone").trim(), super_admin_email: value("super_admin_email").trim(),
+    customer_address: value("customer_address").trim(), customer_tax_id: value("customer_tax_id").trim(), customer_pic_name: value("customer_pic_name").trim(), customer_pic_position: value("customer_pic_position").trim(),
+    customer_pic_email: value("customer_pic_email").trim(), customer_pic_phone: value("customer_pic_phone").trim(), super_admin_name: value("super_admin_name").trim(), super_admin_position: value("super_admin_position").trim(), super_admin_email: value("super_admin_email").trim(),
     domain_workspace: value("domain_workspace").trim(), reseller_billing_contact_email: value("reseller_billing_contact_email").trim(), reseller_billing_contact_phone: value("reseller_billing_contact_phone").trim(),
     package_type: value("package_type"), payment_term: value("payment_term"), subscription_start_date: value("subscription_start_date"), subscription_end_date: value("subscription_end_date"), go_live_target_date: value("go_live_target_date"),
     estimated_employee_count: Number(value("estimated_employee_count") || 0), number_of_admin_users: Number(value("number_of_admin_users") || 0), number_of_payroll_groups: Number(value("number_of_payroll_groups") || 0),
     implementation_included: form.elements.implementation_included.checked ? 1 : 0, training_included: form.elements.training_included.checked ? 1 : 0,
+    subscription_number: value("subscription_number").trim(), package_description: value("package_description").trim(), monthly_price: Number(value("monthly_price") || 0), partner_discount_percent: Number(value("partner_discount_percent") || 0), payment_scheme: value("payment_scheme").trim(),
     add_ons: [...document.querySelectorAll("#hrd-add-ons tr")].filter((row) => row.querySelector(".hrd-add-on-check").checked).map((row) => ({ add_on: row.dataset.name, quantity: Number(row.querySelector(".hrd-add-on-quantity").value || 0) })),
   });
 
@@ -126,7 +127,7 @@
 
   const fileList = (files) => {
     const list = document.createElement("ul");
-    (files || []).forEach((file) => { const li = document.createElement("li"); const link = document.createElement("a"); link.href = file.download_url; link.append(text(file.file_name || `SOC PDF v${file.version}`)); li.append(link); list.append(li); });
+    (files || []).forEach((file) => { const li = document.createElement("li"); const link = document.createElement("a"); link.href = file.download_url; link.append(text(file.file_name || `${file.document_type || "SOC PDF"} v${file.version}`)); li.append(link); if (file.signed_download_url) { const signed = document.createElement("a"); signed.href = file.signed_download_url; signed.append(text("Signed copy")); li.append(text(" — "), signed); } list.append(li); });
     return list;
   };
 
@@ -152,8 +153,26 @@
       const heading = document.createElement("div"); heading.className = "hrd-section-heading"; const h2 = document.createElement("h2"); h2.append(text(`${request.name} — ${request.customer_company_name}`)); const ticket = document.createElement("a"); ticket.href = request.ticket_url; ticket.append(text(`Buka Helpdesk Ticket #${request.ticket}`)); heading.append(h2, ticket); target.append(heading, detailTable(request));
       if (request.revision_reason) { const notice = document.createElement("aside"); notice.className = "hrd-notice"; notice.append(text(`Revisi diminta: ${request.revision_reason}`)); target.append(notice); }
       const addOnTitle = document.createElement("h3"); addOnTitle.append(text("Module & Add-on")); const addOns = document.createElement("ul"); (request.add_ons || []).forEach((item) => { const li = document.createElement("li"); li.append(text(`${item.add_on}: ${item.quantity}`)); addOns.append(li); }); target.append(addOnTitle, addOns);
-      const documentTitle = document.createElement("h3"); documentTitle.append(text("SOC Documents")); target.append(documentTitle, fileList(request.documents));
-      if (request.can_edit) { const edit = document.createElement("button"); edit.type = "button"; edit.className = "hrd-primary"; edit.append(text("Perbarui Data Revisi")); edit.addEventListener("click", () => populateRevision(request)); target.append(edit); }
+      const documentTitle = document.createElement("h3"); documentTitle.append(text("SOC & SAC Documents")); target.append(documentTitle, fileList(request.documents));
+      if (request.can_submit_signed) {
+        const signedForm = document.createElement("form"); signedForm.className = "hrd-reply";
+        const signedTitle = document.createElement("h3"); signedTitle.append(text("Kirim Dokumen Bertanda Tangan"));
+        const partnerLabel = document.createElement("label"); partnerLabel.append(text("Signed Partner SOC")); const partnerFile = document.createElement("input"); partnerFile.type = "file"; partnerFile.required = true; partnerFile.accept = ".pdf,image/*"; partnerLabel.append(partnerFile);
+        const customerLabel = document.createElement("label"); customerLabel.append(text("Signed End Customer SAC")); const customerFile = document.createElement("input"); customerFile.type = "file"; customerFile.required = true; customerFile.accept = ".pdf,image/*"; customerLabel.append(customerFile);
+        const signedMessage = document.createElement("textarea"); signedMessage.rows = 3; signedMessage.placeholder = "Pesan untuk HDS (opsional)";
+        const signedButton = document.createElement("button"); signedButton.type = "submit"; signedButton.className = "hrd-primary"; signedButton.append(text("Kirim Signed SOC & SAC"));
+        const signedStatus = document.createElement("p"); signedStatus.setAttribute("role", "status");
+        signedForm.append(signedTitle, partnerLabel, customerLabel, signedMessage, signedButton, signedStatus);
+        signedForm.addEventListener("submit", async (event) => { event.preventDefault(); signedStatus.textContent = "Mengunggah…"; try { const partnerFiles = await upload(partnerFile.files); const customerFiles = await upload(customerFile.files); await call(`${api}.submit_signed_documents`, { name: request.name, partner_soc_file: partnerFiles[0], customer_sac_file: customerFiles[0], message: signedMessage.value }); await loadRequest(request.name); await loadRequests(); } catch (error) { signedStatus.textContent = error.message; } });
+        target.append(signedForm);
+      }
+      if (request.handoff_available) {
+        const reveal = document.createElement("button"); reveal.type = "button"; reveal.className = "hrd-primary"; reveal.append(text("Tampilkan Workspace Access"));
+        reveal.addEventListener("click", async () => { reveal.disabled = true; try { const access = await call(`${api}.get_workspace_handoff`, { name: request.name }); const handoffTitle = document.createElement("h3"); handoffTitle.append(text("Workspace Access — hanya untuk PA pengaju")); const handoff = document.createElement("dl"); handoff.className = "hrd-detail-grid"; [["Workspace", access.workspace_reference], ["Username", access.access_username], ["Temporary Secret", access.access_secret], ["Instructions", access.instructions || "-"]].forEach(([label, item]) => { const dt = document.createElement("dt"); dt.append(text(label)); const dd = document.createElement("dd"); dd.append(text(item)); handoff.append(dt, dd); }); reveal.replaceWith(handoffTitle, handoff); } catch (error) { reveal.disabled = false; window.alert(error.message); } });
+        target.append(reveal);
+      }
+      if (request.can_edit) { const edit = document.createElement("button"); edit.type = "button"; edit.className = "hrd-primary"; edit.append(text("Perbarui Data Amendment")); edit.addEventListener("click", () => populateRevision(request)); target.append(edit); }
+      if (request.can_request_cancellation) { const cancel = document.createElement("button"); cancel.type = "button"; cancel.append(text("Minta Cancellation")); cancel.addEventListener("click", async () => { const reason = window.prompt("Alasan cancellation"); if (!reason) return; try { await call(`${api}.request_cancellation`, { name: request.name, reason }); await loadRequest(request.name); } catch (error) { window.alert(error.message); } }); target.append(cancel); }
       const threadTitle = document.createElement("h3"); threadTitle.append(text("Ticket Conversation")); const thread = document.createElement("div"); thread.className = "hrd-thread";
       (request.replies || []).forEach((reply) => { const section = document.createElement("section"); const meta = document.createElement("strong"); meta.append(text(`${reply.sender || "HR Desk"} · ${reply.communication_date || ""}`)); const content = document.createElement("div"); content.innerHTML = reply.content || ""; section.append(meta, content, fileList(reply.attachments)); thread.append(section); }); target.append(threadTitle, thread);
       const replyForm = document.createElement("form"); replyForm.className = "hrd-reply"; const message = document.createElement("textarea"); message.required = true; message.rows = 4; message.placeholder = "Tulis balasan untuk HR Desk"; const attachments = document.createElement("input"); attachments.type = "file"; attachments.multiple = true; const send = document.createElement("button"); send.type = "submit"; send.className = "hrd-primary"; send.append(text("Kirim Balasan")); const replyStatus = document.createElement("p"); replyStatus.setAttribute("role", "status"); replyForm.append(message, attachments, send, replyStatus);

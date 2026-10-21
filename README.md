@@ -103,15 +103,34 @@ Retries with the same key return the existing request instead of creating a
 second request or ticket. Frappe's request transaction rolls back both records
 if either insert fails.
 
-SOC status is separate from Helpdesk ticket status:
+SOC status remains separate from Helpdesk ticket status and follows the
+controlled sequence:
 
-`Submitted -> Under Review -> Revision Requested -> Under Review -> Approved -> PDF Sent -> Completed`
+`SOC Requested -> SOC Published -> SOC Signed -> Workspace Creation -> Workspace Created`
 
-HR Desk Commercial users generate a PDF using the standard Frappe Print Format
-`SOC Request Form - Standard`. Generated versions remain private and invisible
-to partners until an agent explicitly uses **Release Latest PDF**. Release calls
-Helpdesk's native `reply_via_agent`, attaches the PDF to the same ticket, and
-preserves the normal outgoing-email and conversation workflow.
+`Cancelled` is a terminal exception outcome. HDS can reject a signed pair back
+to `SOC Published` or reopen a published/signed request for amendment. Failed
+provisioning remains in `Workspace Creation` and is recorded as an immutable
+event before retry.
+
+`HR Desk Commercial` is the HDS role. `HR Desk Technical` is the HDT role. HDS
+can perform HDT provisioning actions; HDT cannot publish documents, accept
+signatures, approve workspace creation, amend commercial data, or cancel an
+SOC. System Manager uses a separate audited emergency override and cannot use
+it to bypass required document, signature, or handoff prerequisites.
+
+HDS generates and publishes a paired `Partner SOC - New Customer` and `End
+Customer SAC - New Customer`. The documents share a version, remain private
+until published, and use blank signature/name/position/date placeholders.
+Partners upload the signed pair to the same ticket context. HDS must explicitly
+confirm signature completeness, legibility, and published-version matching
+before workspace creation can begin.
+
+HDT or HDS records provisioning failures or completes the workspace. Completion
+creates an encrypted `HRD SOC Handoff`. Only the original submitting PA can
+retrieve its access data through the Partner Portal; organization supervisors
+receive a completion notice but cannot read the handoff. The ordinary ticket
+reply contains no credential or secret.
 
 Package and payment-term masters are intentionally not seeded because they are
 commercial configuration. The eight approved initial add-ons and the `SOC
@@ -128,6 +147,9 @@ Request` ticket type are created idempotently after migration.
 6. Execute the partner/customer/agent access tests before production approval.
 7. Only after approval, repeat the explicit-site migration on production.
 
-Migration creates DocTypes, one `HD Ticket.custom_soc_request` link, the ticket
-type, print format, and seed add-on records. It does not migrate or rewrite
-existing customer tickets, Knowledge Base records, or legacy SOC tickets.
+Migration creates/synchronizes the SOC DocTypes, the `HR Desk Technical` role,
+one `HD Ticket.custom_soc_request` link, ticket type, Print Formats, and seed
+add-on records. The workflow patch maps legacy statuses conservatively; legacy
+`Completed` records become `SOC Published` rather than falsely asserting that
+signed documents and workspace provisioning exist. It does not rewrite
+existing customer tickets or Knowledge Base records.

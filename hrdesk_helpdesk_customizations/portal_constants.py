@@ -15,6 +15,7 @@ PORTAL_ADMIN_ROLE = "HR Desk Portal Administrator"
 KB_EDITOR_ROLE = "HR Desk Knowledge Editor"
 INTERNAL_KB_ROLE = "HR Desk Internal Content"
 COMMERCIAL_ROLE = "HR Desk Commercial"
+TECHNICAL_ROLE = "HR Desk Technical"
 
 SOC_REQUEST_KIND = "Partner SOC"
 SOC_TICKET_TYPE = "SOC Request"
