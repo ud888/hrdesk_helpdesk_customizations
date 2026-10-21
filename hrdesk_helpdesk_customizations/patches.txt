@@ -1,2 +1,4 @@
+[pre_model_sync]
+
 [post_model_sync]
 hrdesk_helpdesk_customizations.patches.v1_0.migrate_soc_workflow

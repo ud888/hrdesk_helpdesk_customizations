@@ -147,6 +147,7 @@ class SOCContractTest(unittest.TestCase):
 
     def test_soc_data_patch_runs_after_schema_sync(self):
         patches = (PACKAGE / "patches.txt").read_text(encoding="utf-8")
+        self.assertIn("[pre_model_sync]\n", patches)
         self.assertIn(
             "[post_model_sync]\n"
             "hrdesk_helpdesk_customizations.patches.v1_0.migrate_soc_workflow",
