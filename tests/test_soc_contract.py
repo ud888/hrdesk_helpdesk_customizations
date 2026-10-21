@@ -145,6 +145,14 @@ class SOCContractTest(unittest.TestCase):
         self.assertIn("PARTNER_PORTAL_ROLE in frappe.get_roles", portal)
         self.assertIn("if get_membership():", portal)
 
+    def test_soc_data_patch_runs_after_schema_sync(self):
+        patches = (PACKAGE / "patches.txt").read_text(encoding="utf-8")
+        self.assertIn(
+            "[post_model_sync]\n"
+            "hrdesk_helpdesk_customizations.patches.v1_0.migrate_soc_workflow",
+            patches,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
