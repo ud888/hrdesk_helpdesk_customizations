@@ -26,10 +26,13 @@ class PartnerPortalContractTest(unittest.TestCase):
                     setup,
                     re.DOTALL,
                 )
-                self.assertIsNotNone(field_definition)
-                self.assertIn(
-                    "in_standard_filter=0",
+                self.assertIsNotNone(
+                    field_definition,
+                    f"Missing custom field definition for {fieldname}",
+                )
+                self.assertRegex(
                     field_definition.group("body"),
+                    r"in_standard_filter\s*=\s*0",
                 )
 
     def test_membership_schema_has_unique_user_and_partner(self):
